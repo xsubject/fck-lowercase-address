@@ -3,10 +3,9 @@ import time
 import re
 import pyperclip
 import pystray
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 import threading
 import sys
-import os
 from pynput import keyboard
 from eth_utils import to_checksum_address
 
