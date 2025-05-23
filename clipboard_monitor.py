@@ -3,7 +3,7 @@ import time
 import re
 import pyperclip
 import pystray
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 import threading
 import sys
 import os
@@ -73,10 +73,10 @@ class EthereumClipboardMonitor:
         """Play macOS system sounds"""
         import subprocess
         if mode == 'lowercase':
-            subprocess.run(['afplay', '/System/Library/Sounds/Sosumi.aiff'], check=False, timeout=1)
+            subprocess.run(['afplay', '-t', '1', '-v', '0.35', '-r', '1.5', '/System/Library/Sounds/Purr.aiff'], check=False, timeout=1.5)
             pass
         else:
-            subprocess.run(['afplay', '/System/Library/Sounds/Glass.aiff'], check=False, timeout=1)
+            subprocess.run(['afplay', '-t', '1', '-v', '0.35', '-r', '1.5', '/System/Library/Sounds/Blow.aiff'], check=False, timeout=1.5)
     
     def play_windows_sound(self, mode):
         """Play Windows system sounds"""
@@ -105,7 +105,7 @@ class EthereumClipboardMonitor:
         
 
     
-    def create_tray_icon(self, is_checksum=False):
+    def create_tray_icon(self, is_checksum=False, enabled=True):
         size = (64, 64)
         radius = 360
 
@@ -113,26 +113,35 @@ class EthereumClipboardMonitor:
 
         mask = Image.new('L', size, 0)
         mask_draw = ImageDraw.Draw(mask)
-        mask_draw.rounded_rectangle((0, 0, *size), radius=radius, fill=255)
+        opacity = 255 if enabled else 200
 
+
+        mask_draw.rounded_rectangle((0, 0, *size), radius=radius, fill=opacity)
         icon = Image.new('RGBA', size, (255, 255, 255, 220))
         draw = ImageDraw.Draw(icon)
         
         color = 'green' if is_checksum else 'red'
         
-        if is_checksum:
-            triangle_points = [
-                (32, 20), 
-                (22, 44),
-                (42, 44)   
-            ]
+        if enabled:
+            if is_checksum:
+                triangle_points = [
+                    (32, 20), 
+                    (22, 44),
+                    (42, 44)   
+                ]
+            else:
+                triangle_points = [
+                    (22, 20),  
+                    (42, 20), 
+                    (32, 44)  
+                ]
+            draw.polygon(triangle_points, fill=color, outline='white')
         else:
-            triangle_points = [
-                (22, 20),  
-                (42, 20), 
-                (32, 44)  
-            ]
-        draw.polygon(triangle_points, fill=color, outline='white')
+            draw.ellipse([20, 18, 44, 35], fill='black')
+            draw.ellipse([22, 20, 42, 33], fill='white')
+            draw.rectangle([30, 28, 34, 40], fill='black')
+            draw.ellipse([30, 42, 34, 46], fill='black')
+            image.paste(icon, (0, 0), mask)
 
         image.paste(icon, (0, 0), mask)
 
@@ -140,7 +149,7 @@ class EthereumClipboardMonitor:
 
     def update_tray_icon(self):
         if self.tray_icon:
-            new_image = self.create_tray_icon(self.checksum_mode)
+            new_image = self.create_tray_icon(self.checksum_mode, self.monitoring)
             self.tray_icon.icon = new_image
 
     def is_ethereum_address(self, text):
@@ -206,23 +215,22 @@ class EthereumClipboardMonitor:
         else:
             print("Monitoring paused")
         
-        self.update_menu()
+        if self.tray_icon:
+            self.update_menu()
+            self.update_tray_icon()
     
     def update_menu(self):
         menu_items = [
             pystray.MenuItem(
-                "Stop monitoring" if self.monitoring else "Start monitoring",
+                "Enable",
                 self.toggle_monitoring,
                 checked=lambda item: self.monitoring
             ),
-            pystray.Menu.SEPARATOR,
             pystray.MenuItem(
                 "Mode: Checksum" if self.checksum_mode else "Mode: Lowercase",
                 self.toggle_checksum_mode,
                 checked=lambda item: self.checksum_mode
             ),
-            pystray.Menu.SEPARATOR,
-            pystray.MenuItem("Show clipboard", self.show_last_clipboard),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("Quit", self.quit_app)
         ]
@@ -240,25 +248,9 @@ class EthereumClipboardMonitor:
         sys.exit(0)
     
     def run(self):
-        image = self.create_tray_icon(self.checksum_mode)
+        image = self.create_tray_icon(self.checksum_mode, self.monitoring)
         
-        menu_items = [
-            pystray.MenuItem(
-                "Stop monitoring",
-                self.toggle_monitoring,
-                checked=lambda item: self.monitoring
-            ),
-            pystray.Menu.SEPARATOR,
-            pystray.MenuItem(
-                "Mode: Lowercase",
-                self.toggle_checksum_mode,
-                checked=lambda item: self.checksum_mode
-            ),
-            pystray.Menu.SEPARATOR,
-            pystray.MenuItem("Show clipboard", self.show_last_clipboard),
-            pystray.Menu.SEPARATOR,
-            pystray.MenuItem("Quit", self.quit_app)
-        ]
+        menu_items = []
         
         self.tray_icon = pystray.Icon(
             "ethereum_monitor",
@@ -266,6 +258,8 @@ class EthereumClipboardMonitor:
             "Ethereum Address Monitor",
             pystray.Menu(*menu_items)
         )
+        self.update_menu()
+        self.update_tray_icon()
         
         monitor_thread = threading.Thread(target=self.monitor_clipboard, daemon=True)
         monitor_thread.start()
