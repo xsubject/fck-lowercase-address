@@ -122,17 +122,16 @@ class EthereumClipboardMonitor:
         
         if is_checksum:
             triangle_points = [
-                (32, 16),
-                (20, 48), 
-                (44, 48)  
+                (32, 20), 
+                (22, 44),
+                (42, 44)   
             ]
         else:
             triangle_points = [
-                (20, 16),
-                (44, 16),  
-                (32, 48)  
+                (22, 20),  
+                (42, 20), 
+                (32, 44)  
             ]
-        
         draw.polygon(triangle_points, fill=color, outline='white')
 
         image.paste(icon, (0, 0), mask)
