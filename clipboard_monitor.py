@@ -8,6 +8,7 @@ import threading
 import sys
 import os
 from pynput import keyboard
+from eth_utils import to_checksum_address
 
 if sys.platform == 'darwin':
     import AppKit
@@ -103,27 +104,11 @@ class EthereumClipboardMonitor:
 
     def is_ethereum_address(self, text):
         return bool(self.eth_pattern.fullmatch(text.strip()))
-    
-    def to_checksum_address(self, address):
-        address_lower = address[2:].lower()
-        import hashlib
-        hash_hex = hashlib.sha3_256(address_lower.encode()).hexdigest()
-        
-        checksum_address = "0x"
-        for i, char in enumerate(address_lower):
-            if char.isalpha():
-                if int(hash_hex[i], 16) >= 8:
-                    checksum_address += char.upper()
-                else:
-                    checksum_address += char
-            else:
-                checksum_address += char
-        
-        return checksum_address
+
     
     def normalize_ethereum_address(self, address):
         if self.checksum_mode:
-            return self.to_checksum_address(address)
+            return to_checksum_address(address)
         else:
             return address.lower()
     
