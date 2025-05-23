@@ -103,11 +103,46 @@ class EthereumClipboardMonitor:
             except:
                 print(f"🔊 Sound: {mode}")
         
-    def create_tray_icon(self):
-        image = Image.new('RGB', (64, 64), color='black')
-        draw = ImageDraw.Draw(image)
-        draw.ellipse([16, 16, 48, 48], fill='blue', outline='white', width=2)
+
+    
+    def create_tray_icon(self, is_checksum=False):
+        size = (64, 64)
+        radius = 360
+
+        image = Image.new('RGBA', size, (0, 0, 0, 0))
+
+        mask = Image.new('L', size, 0)
+        mask_draw = ImageDraw.Draw(mask)
+        mask_draw.rounded_rectangle((0, 0, *size), radius=radius, fill=255)
+
+        icon = Image.new('RGBA', size, (255, 255, 255, 220))
+        draw = ImageDraw.Draw(icon)
+        
+        color = 'green' if is_checksum else 'red'
+        
+        if is_checksum:
+            triangle_points = [
+                (32, 16),
+                (20, 48), 
+                (44, 48)  
+            ]
+        else:
+            triangle_points = [
+                (20, 16),
+                (44, 16),  
+                (32, 48)  
+            ]
+        
+        draw.polygon(triangle_points, fill=color, outline='white')
+
+        image.paste(icon, (0, 0), mask)
+
         return image
+
+    def update_tray_icon(self):
+        if self.tray_icon:
+            new_image = self.create_tray_icon(self.checksum_mode)
+            self.tray_icon.icon = new_image
 
     def is_ethereum_address(self, text):
         return bool(self.eth_pattern.fullmatch(text.strip()))
@@ -161,6 +196,7 @@ class EthereumClipboardMonitor:
         
         if self.tray_icon:
             self.update_menu()
+            self.update_tray_icon()
     
     def toggle_monitoring(self, icon, item):
         self.monitoring = not self.monitoring
@@ -205,7 +241,7 @@ class EthereumClipboardMonitor:
         sys.exit(0)
     
     def run(self):
-        image = self.create_tray_icon()
+        image = self.create_tray_icon(self.checksum_mode)
         
         menu_items = [
             pystray.MenuItem(
