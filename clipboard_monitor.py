@@ -123,12 +123,16 @@ class EthereumClipboardMonitor:
         print("Ethereum clipboard monitor started...")
         hotkey_text = "Cmd+Shift+0" if sys.platform == 'darwin' else "Ctrl+Shift+0"
         print(f"Press {hotkey_text} to toggle between lowercase/checksum modes")
-        
+        last_mode = "lowercase" if not self.checksum_mode else "checksum"
+
+
         while self.monitoring:
             try:
                 current_clipboard = pyperclip.paste()
                 
-                if current_clipboard != self.last_clipboard:
+                if current_clipboard != self.last_clipboard or last_mode != self.checksum_mode:
+                    last_mode = self.checksum_mode
+                    
                     self.last_clipboard = current_clipboard
                     
                     if self.is_ethereum_address(current_clipboard):
@@ -136,6 +140,8 @@ class EthereumClipboardMonitor:
                         
                         if normalized_address != current_clipboard:
                             pyperclip.copy(normalized_address)
+                            self.last_clipboard = normalized_address
+
                             mode_text = "checksum" if self.checksum_mode else "lowercase"
                             print(f"Address converted to {mode_text}:")
                             print(f"  {current_clipboard} → {normalized_address}")
