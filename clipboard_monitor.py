@@ -52,6 +52,12 @@ class EthereumClipboardMonitor:
         listener.start()
     
     def play_sound(self, mode):
+        sound_thread = threading.Thread(target=self._play_sound_threaded, args=(mode,))
+        sound_thread.daemon = True
+        sound_thread.start()
+
+
+    def _play_sound_threaded(self, mode):
         """Play different sounds for different modes"""
         try:
             if sys.platform == 'darwin':
@@ -67,9 +73,10 @@ class EthereumClipboardMonitor:
         """Play macOS system sounds"""
         import subprocess
         if mode == 'lowercase':
-            subprocess.run(['afplay', '/System/Library/Sounds/Sosumi.aiff'], check=False)
+            subprocess.run(['afplay', '/System/Library/Sounds/Sosumi.aiff'], check=False, timeout=1)
+            pass
         else:
-            subprocess.run(['afplay', '/System/Library/Sounds/Glass.aiff'], check=False)
+            subprocess.run(['afplay', '/System/Library/Sounds/Glass.aiff'], check=False, timeout=1)
     
     def play_windows_sound(self, mode):
         """Play Windows system sounds"""
