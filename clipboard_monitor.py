@@ -147,9 +147,6 @@ class EthereumClipboardMonitor:
                             mode_text = "checksum" if self.checksum_mode else "lowercase"
                             print(f"Address converted to {mode_text}:")
                             print(f"  {current_clipboard} → {normalized_address}")
-                            
-                            # Воспроизводим звук вместо уведомления
-                            self.play_sound(mode_text)
                     
                 time.sleep(0.5) 
                 
